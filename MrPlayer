@@ -91,114 +91,76 @@ end
 -- เสียงคลิก
 local clickSound = Instance.new("Sound", gui)
 clickSound.SoundId = "rbxassetid://12221967"
-clickSound.Volume = 0.5
+-- MrPlayer V1.7 - อัปเกรด UI + ระบบ Auto แสดงผล + Delay local player = game:GetService("Players").LocalPlayer local PlayerGui = player:WaitForChild("PlayerGui") local rs = game:GetService("ReplicatedStorage") local RunService = game:GetService("RunService")
 
--- Style ปุ่ม
-local function applyStyle(button, color, textColor)
-	button.BackgroundColor3 = color
-	button.TextColor3 = textColor or Color3.fromRGB(255, 255, 255)
-	if not button:FindFirstChildOfClass("UICorner") then
-		Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
-	end
-end
+local gui = Instance.new("ScreenGui") gui.Name = "MrPlayerUI" gui.ResetOnSpawn = false gui.Parent = PlayerGui
 
--- ฟังก์ชันสร้างปุ่ม Auto
-local function createAutoButton(parent, posY, onText, offText, onColor, offColor, emoji)
-	local state = {false}
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 150, 0, 36)
-	btn.Position = UDim2.new(0, 20, 0, posY)
-	btn.Text = onText .. " " .. emoji
-	btn.Font = Enum.Font.SourceSansBold
-	btn.TextSize = 18
-	btn.Parent = parent
-	applyStyle(btn, onColor)
+local frame = Instance.new("Frame") frame.Size = UDim2.new(0, 360, 0, 300) frame.Position = UDim2.new(0.3, 0, 0.3, 0) frame.BackgroundColor3 = Color3.fromRGB(20, 25, 35) frame.BorderSizePixel = 0 frame.Active = true frame.Draggable = true frame.Visible = true frame.Parent = gui
 
-	btn.MouseButton1Click:Connect(function()
-		clickSound:Play()
-		state[1] = not state[1]
-		btn.Text = state[1] and (offText .. " ❌") or (onText .. " " .. emoji)
-		applyStyle(btn, state[1] and offColor or onColor)
-	end)
-	return state
-end
+local tabs = {"Main", "Shop", "Summer", "Credit"} local buttons, pages = {}, {}
 
--- ปุ่ม Auto ในแท็บ Main
-local autoSeed = createAutoButton(pages["Main"], 10,  "Auto Seed", "Stop Seed", Color3.fromRGB(40,160,100), Color3.fromRGB(180,60,60), "🌱")
-local autoGear = createAutoButton(pages["Main"], 60,  "Auto Gear", "Stop Gear", Color3.fromRGB(80,120,255), Color3.fromRGB(160,60,180), "⚙️")
-local autoEgg  = createAutoButton(pages["Main"], 110, "Auto Egg",  "Stop Egg",  Color3.fromRGB(255,200,80), Color3.fromRGB(180,80,20),  "🥚")
+for i, name in ipairs(tabs) do local tab = Instance.new("TextButton") tab.Size = UDim2.new(0, 80, 0, 30) tab.Position = UDim2.new(0, 10 + ((i - 1) * 90), 0, 10) tab.Text = name tab.BackgroundColor3 = Color3.fromRGB(30, 40, 70) tab.TextColor3 = Color3.fromRGB(255, 255, 255) tab.Font = Enum.Font.SourceSansBold tab.TextSize = 18 local corner = Instance.new("UICorner", tab) tab.Parent = frame buttons[name] = tab
 
--- ปุ่มในแท็บ Shop (เปิด/ปิด GUI ตามชื่อใน PlayerGui)
-local function createShopToggleButton(parent, posY, text, color, targetGuiName, textColorOverride)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 200, 0, 36)
-	btn.Position = UDim2.new(0, 20, 0, posY)
-	btn.Text = text
-	btn.Font = Enum.Font.SourceSansBold
-	btn.TextSize = 18
-	btn.BackgroundColor3 = color
-	btn.TextColor3 = textColorOverride or Color3.fromRGB(255, 255, 255)
-	btn.Parent = parent
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+local page = Instance.new("Frame")
+page.Size = UDim2.new(1, -20, 1, -50)
+page.Position = UDim2.new(0, 10, 0, 40)
+page.BackgroundTransparency = 1
+page.Visible = name == "Main"
+page.Parent = frame
+pages[name] = page
 
-	btn.MouseButton1Click:Connect(function()
-		clickSound:Play()
-		local guiToToggle = player:FindFirstChild("PlayerGui"):FindFirstChild(targetGuiName)
-		if guiToToggle and guiToToggle:IsA("GuiBase") then
-			guiToToggle.Enabled = not guiToToggle.Enabled
-		else
-			warn("❌ ไม่พบ GUI: " .. targetGuiName)
-		end
-	end)
-end
+local layout = Instance.new("UIListLayout", page)
+layout.Padding = UDim.new(0, 10)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- เพิ่มปุ่มร้านค้าในแท็บ Shop
-createShopToggleButton(pages["Shop"], 20,  "Seed Shop 🌱",  Color3.fromRGB(60, 180, 100), "Seed_Shop")
-createShopToggleButton(pages["Shop"], 70,  "Gear Shop ⚙️",  Color3.fromRGB(80, 140, 255), "Gear_Shop")
-createShopToggleButton(pages["Shop"], 120, "Honey Shop 🌻", Color3.fromRGB(255, 200, 60), "HoneyEventShop_UI", Color3.fromRGB(0, 0, 0))
-
--- แท็บ Credit
-local credit = Instance.new("TextLabel", pages["Credit"])
-credit.Size = UDim2.new(1, 0, 0, 40)
-credit.Position = UDim2.new(0, 0, 0, 20)
-credit.Text = "YouTube : Mr.Player"
-credit.Font = Enum.Font.SourceSansBold
-credit.TextSize = 20
-credit.TextColor3 = Color3.fromRGB(180, 200, 255)
-credit.BackgroundTransparency = 1
-
--- Anti-AFK
-local VirtualUser = game:GetService("VirtualUser")
-player.Idled:Connect(function()
-	VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-	task.wait(1)
-	VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-end)
-
--- ระบบ Auto
-task.spawn(function()
-	local seeds = {"Feijoa", "Banana", "Avocado", "Green Apple", "Watermelon", "Cauliflower", "Loquat", "Prickly Pear", "Bell Pepper", "Kiwi", "Pineapple", "Sugar Apple"}
-	local gears = {"Watering Can", "Basic Sprinkler", "Advanced Sprinkler", "Godly Sprinkler", "Tanning Mirror", "Master Sprinkler", "Friendship Pot"}
-
-	while true do
-		if autoSeed[1] then
-			for _, seed in ipairs(seeds) do
-				rs.GameEvents.BuySeedStock:FireServer(seed)
-				task.wait(1)
-			end
-		end
-		if autoGear[1] then
-			for _, gear in ipairs(gears) do
-				rs.GameEvents.BuyGearStock:FireServer(gear)
-				task.wait(1)
-			end
-		end
-		if autoEgg[1] then
-			for i = 1, 3 do
-				rs.GameEvents.BuyPetEgg:FireServer(i)
-				task.wait(1)
-			end
-		end
-		task.wait(1)
+tab.MouseButton1Click:Connect(function()
+	for n, p in pairs(pages) do
+		p.Visible = n == name
 	end
 end)
+
+end
+
+local function createToggleButton(parent, label, color, flagName) local btn = Instance.new("TextButton") btn.Size = UDim2.new(0, 300, 0, 36) btn.Text = label btn.Font = Enum.Font.SourceSansBold btn.TextSize = 18 btn.BackgroundColor3 = color btn.TextColor3 = Color3.fromRGB(255, 255, 255) btn.LayoutOrder = 1 btn.Parent = parent Instance.new("UICorner", btn)
+
+_G[flagName] = false
+btn.MouseButton1Click:Connect(function()
+	_G[flagName] = not _G[flagName]
+	btn.Text = _G[flagName] and ("Stop "..label:split(" ")[2].." ❌") or label
+end)
+
+end
+
+createToggleButton(pages.Main, "Auto Seed 🌱", Color3.fromRGB(40, 160, 100), "autoSeed") createToggleButton(pages.Main, "Auto Gear ⚙️", Color3.fromRGB(80, 120, 255), "autoGear") createToggleButton(pages.Main, "Auto Egg 🐾", Color3.fromRGB(255, 200, 80), "autoEgg")
+
+-- Delay Box local delayBox = Instance.new("TextBox") delayBox.Size = UDim2.new(0, 100, 0, 30) delayBox.PlaceholderText = "Delay (s)" delayBox.Text = "1" delayBox.Font = Enum.Font.SourceSansBold delayBox.TextSize = 18 delayBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60) delayBox.TextColor3 = Color3.fromRGB(255, 255, 255) delayBox.LayoutOrder = 2 delayBox.Parent = pages.Main Instance.new("UICorner", delayBox)
+
+_G.autoDelay = 1 delayBox.FocusLost:Connect(function() local num = tonumber(delayBox.Text) if num and num >= 0.1 then _G.autoDelay = num end end)
+
+-- Shop local function createShopToggleButton(parent, label, targetGuiName) local btn = Instance.new("TextButton") btn.Size = UDim2.new(0, 300, 0, 36) btn.Text = label btn.Font = Enum.Font.SourceSansBold btn.TextSize = 18 btn.BackgroundColor3 = Color3.fromRGB(150, 100, 200) btn.TextColor3 = Color3.fromRGB(255, 255, 255) btn.Parent = parent Instance.new("UICorner", btn)
+
+btn.MouseButton1Click:Connect(function()
+	local gui = PlayerGui:FindFirstChild(targetGuiName)
+	if gui then gui.Enabled = not gui.Enabled end
+end)
+
+end
+
+createShopToggleButton(pages.Shop, "Open Seed Shop", "Seed_Shop") createShopToggleButton(pages.Shop, "Open Gear Shop", "Gear_Shop") createShopToggleButton(pages.Shop, "Open Honey Shop", "HoneyEventShop_UI")
+
+-- Summer createToggleButton(pages.Summer, "Auto Harvest ☀️", Color3.fromRGB(255, 140, 80), "autoHarvestSummer")
+
+local harvestLabel = Instance.new("TextLabel") harvestLabel.Size = UDim2.new(0, 300, 0, 28) harvestLabel.Text = "กำลังเก็บ: -" harvestLabel.Font = Enum.Font.SourceSansBold harvestLabel.TextSize = 18 harvestLabel.TextColor3 = Color3.fromRGB(255, 255, 255) harvestLabel.BackgroundTransparency = 1 harvestLabel.LayoutOrder = 3 harvestLabel.Parent = pages.Summer
+
+-- Credit local credit = Instance.new("TextLabel") credit.Size = UDim2.new(1, 0, 0, 40) credit.Text = "YouTube : Mr.Player" credit.Font = Enum.Font.SourceSansBold credit.TextSize = 20 credit.TextColor3 = Color3.fromRGB(180, 200, 255) credit.BackgroundTransparency = 1 credit.LayoutOrder = 1 credit.Parent = pages.Credit
+
+-- ปุ่มเปิดปิด UI local toggleBtn = Instance.new("TextButton", gui) toggleBtn.Size = UDim2.new(0, 60, 0, 60) toggleBtn.Position = UDim2.new(0, 20, 0, 100) toggleBtn.Text = "MP" toggleBtn.Font = Enum.Font.SourceSansBold toggleBtn.TextSize = 24 toggleBtn.BackgroundColor3 = Color3.fromRGB(25, 50, 100) toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255) toggleBtn.BorderSizePixel = 0 toggleBtn.Draggable = true toggleBtn.Active = true Instance.new("UICorner", toggleBtn)
+
+toggleBtn.MouseButton1Click:Connect(function() frame.Visible = not frame.Visible end)
+
+-- Anti-AFK local VirtualUser = game:GetService("VirtualUser") player.Idled:Connect(function() VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame) task.wait(1) VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame) end)
+
+-- 🔁 Loop ด้วย RunService local seeds = {"Feijoa", "Banana", "Avocado", "Green Apple", "Watermelon", "Cauliflower", "Loquat", "Prickly Pear", "Bell Pepper", "Kiwi", "Pineapple", "Sugar Apple"} local gears = {"Watering Can", "Basic Sprinkler", "Advanced Sprinkler", "Godly Sprinkler", "Tanning Mirror", "Master Sprinkler", "Friendship Pot"} local summerFruits = {"Tomato", "Cauliflower", "Green Apple", "Feijoa", "Kiwi", "Loquat", "Avocado", "Pineapple", "Water Melon", "Prickly Pear", "Banana", "Bell Pepper", "Sugar Apple"}
+
+RunService.Heartbeat:Connect(function() if _G.autoSeed then for _, seed in ipairs(seeds) do rs.GameEvents.BuySeedStock:FireServer(seed) task.wait(_G.autoDelay) end end if _G.autoGear then for _, gear in ipairs(gears) do rs.GameEvents.BuyGearStock:FireServer(gear) task.wait(_G.autoDelay) end end if _G.autoEgg then for i = 1, 3 do rs.GameEvents.BuyPetEgg:FireServer(i) task.wait(_G.autoDelay) end end if _G.autoHarvestSummer then local base = workspace:FindFirstChild("Farm") if base and base:FindFirstChild("Farm") and base.Farm:FindFirstChild("Important") then local physical = base.Farm.Important:FindFirstChild("Plants_Physical") if physical then for _, name in ipairs(summerFruits) do harvestLabel.Text = "กำลังเก็บ: "..name local model = physical:FindFirstChild(name) if model then for _, fruit in ipairs(model:GetDescendants()) do if fruit:IsA("BasePart") then firetouchinterest(player.Character.HumanoidRootPart, fruit, 0) task.wait(0.05) firetouchinterest(player.Character.HumanoidRootPart, fruit, 1) end end end end harvestLabel.Text = "กำลังเก็บ: -" end end end end)
+
